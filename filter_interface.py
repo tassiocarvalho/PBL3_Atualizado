@@ -18,12 +18,18 @@ class FilterDesignApp:
         """Inicializa a aplicação"""
         self.root = root
         self.root.title("Projeto de Filtros FIR - Janelamento da Função Seno Cardinal")
-        self.root.geometry("1600x900")
-        self.root.minsize(1400, 800)
+        self.root.geometry("1650x900")
+        self.root.minsize(1000, 600)
         
         # Configuração de estilo
         self.style = ttk.Style()
         self.style.theme_use("clam")
+        
+        # Customizar cores e estilos
+        self.style.configure("Title.TLabel", font=('Arial', 14, 'bold'), foreground='#2E5266')
+        self.style.configure("Subtitle.TLabel", font=('Arial', 11, 'bold'), foreground='#2E5266')
+        self.style.configure("Header.TLabel", font=('Arial', 10, 'bold'), foreground='#1F3B4D')
+        self.style.configure("Action.TButton", font=('Arial', 10, 'bold'))
         
         # Instanciar módulos
         self.calculator = FilterCalculator()
@@ -46,17 +52,51 @@ class FilterDesignApp:
         
     def create_interface(self):
         """Cria a interface completa"""
-        # Frame principal
+        # Frame principal com padding reduzido
         main_frame = ttk.Frame(self.root, padding=10)
         main_frame.pack(fill=tk.BOTH, expand=True)
         
-        # Frame de entrada (esquerda)
-        input_frame = ttk.LabelFrame(main_frame, text="Especificações e Controles", padding=15)
-        input_frame.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 10))
-        input_frame.configure(width=400)
+        # Frame de entrada (esquerda) - com scroll
+        input_outer_frame = ttk.LabelFrame(main_frame, text="  Especificações e Controles  ", 
+                                          style="Title.TLabel")
+        input_outer_frame.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 10))
+        input_outer_frame.configure(width=620)
+        input_outer_frame.pack_propagate(False)  # Manter largura fixa
+        
+        # Canvas e scrollbar para o painel de entrada
+        canvas = tk.Canvas(input_outer_frame, highlightthickness=0)
+        scrollbar = ttk.Scrollbar(input_outer_frame, orient="vertical", command=canvas.yview)
+        input_frame = ttk.Frame(canvas, padding=12)
+        
+        # Configurar scroll
+        input_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=input_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        # Pack canvas e scrollbar
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        
+        # Bind mouse wheel para scroll
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        
+        def bind_to_mousewheel(event):
+            canvas.bind_all("<MouseWheel>", _on_mousewheel)
+            
+        def unbind_from_mousewheel(event):
+            canvas.unbind_all("<MouseWheel>")
+            
+        input_outer_frame.bind('<Enter>', bind_to_mousewheel)
+        input_outer_frame.bind('<Leave>', unbind_from_mousewheel)
         
         # Frame de visualização (direita)
-        viz_frame = ttk.LabelFrame(main_frame, text="Visualização dos Resultados", padding=10)
+        viz_frame = ttk.LabelFrame(main_frame, text="  Visualização dos Resultados  ", 
+                                 padding=10, style="Title.TLabel")
         viz_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
         
         self.create_input_section(input_frame)
@@ -66,91 +106,114 @@ class FilterDesignApp:
         """Cria a seção de entrada de dados"""
         row = 0
         
-        # Título
+        # Título principal
         title_label = ttk.Label(parent, text="PROJETO DE FILTROS FIR", 
-                               font=('Arial', 12, 'bold'))
-        title_label.grid(row=row, column=0, columnspan=2, pady=(0, 20))
+                               style="Title.TLabel")
+        title_label.grid(row=row, column=0, columnspan=2, pady=(0, 15))
         row += 1
         
-        # Tipo de filtro
-        ttk.Label(parent, text="Tipo de Filtro:", font=('Arial', 10, 'bold')).grid(
-            row=row, column=0, sticky=tk.W, pady=5)
-        filter_combo = ttk.Combobox(parent, textvariable=self.filter_type_var, 
+        # ========== BLOCO 1: TIPO DE FILTRO ==========
+        type_frame = ttk.LabelFrame(parent, text="  Tipo de Filtro  ", padding=10)
+        type_frame.grid(row=row, column=0, columnspan=2, sticky="ew", pady=(0, 12))
+        row += 1
+        
+        ttk.Label(type_frame, text="Selecione o tipo:", style="Header.TLabel").pack(anchor=tk.W)
+        filter_combo = ttk.Combobox(type_frame, textvariable=self.filter_type_var, 
                                    values=["Passa-Baixa", "Passa-Alta", "Passa-Banda", "Rejeita-Banda"],
-                                   state="readonly", width=20)
-        filter_combo.grid(row=row, column=1, sticky=tk.W+tk.E, pady=5, padx=(10,0))
+                                   state="readonly", width=25, font=('Arial', 10))
+        filter_combo.pack(pady=(8, 0), fill=tk.X)
         filter_combo.bind("<<ComboboxSelected>>", self.on_filter_type_changed)
-        row += 1
         
-        # Separador
-        ttk.Separator(parent, orient='horizontal').grid(row=row, column=0, columnspan=2, 
-                                                       sticky="ew", pady=15)
-        row += 1
-        
-        # Título das especificações
-        spec_title = ttk.Label(parent, text="ESPECIFICAÇÕES DO FILTRO", 
-                              font=('Arial', 11, 'bold'))
-        spec_title.grid(row=row, column=0, columnspan=2, pady=(0, 10))
+        # ========== BLOCO 2: ESPECIFICAÇÕES BÁSICAS ==========
+        spec_frame = ttk.LabelFrame(parent, text="  Especificações Básicas  ", padding=10)
+        spec_frame.grid(row=row, column=0, columnspan=2, sticky="ew", pady=(0, 12))
         row += 1
         
         # Frequência de amostragem
-        ttk.Label(parent, text="Frequência de Amostragem:", font=('Arial', 10)).grid(
-            row=row, column=0, sticky=tk.W, pady=5)
-        fs_frame = ttk.Frame(parent)
-        fs_frame.grid(row=row, column=1, sticky=tk.W+tk.E, pady=5, padx=(10,0))
-        ttk.Entry(fs_frame, textvariable=self.fs_var, width=10).pack(side=tk.LEFT)
-        ttk.Label(fs_frame, text="Hz").pack(side=tk.LEFT, padx=(5, 0))
-        row += 1
-        
-        # Frame dinâmico para frequências
-        self.freq_frame = ttk.Frame(parent)
-        self.freq_frame.grid(row=row, column=0, columnspan=2, sticky="ew", pady=5)
-        row += 1
+        fs_subframe = ttk.Frame(spec_frame)
+        fs_subframe.pack(fill=tk.X, pady=(0, 8))
+        ttk.Label(fs_subframe, text="Frequência de Amostragem:", 
+                 style="Header.TLabel").pack(anchor=tk.W)
+        fs_input_frame = ttk.Frame(fs_subframe)
+        fs_input_frame.pack(anchor=tk.W, pady=(3, 0))
+        ttk.Entry(fs_input_frame, textvariable=self.fs_var, width=12, 
+                 font=('Arial', 10)).pack(side=tk.LEFT)
+        ttk.Label(fs_input_frame, text=" Hz", font=('Arial', 10)).pack(side=tk.LEFT)
         
         # Largura de transição
-        ttk.Label(parent, text="Largura de Transição:", font=('Arial', 10)).grid(
-            row=row, column=0, sticky=tk.W, pady=5)
-        tw_frame = ttk.Frame(parent)
-        tw_frame.grid(row=row, column=1, sticky=tk.W+tk.E, pady=5, padx=(10,0))
-        ttk.Entry(tw_frame, textvariable=self.transition_width_var, width=10).pack(side=tk.LEFT)
-        ttk.Label(tw_frame, text="Hz").pack(side=tk.LEFT, padx=(5, 0))
+        tw_subframe = ttk.Frame(spec_frame)
+        tw_subframe.pack(fill=tk.X, pady=(0, 8))
+        ttk.Label(tw_subframe, text="Largura de Transição:", 
+                 style="Header.TLabel").pack(anchor=tk.W)
+        tw_input_frame = ttk.Frame(tw_subframe)
+        tw_input_frame.pack(anchor=tk.W, pady=(3, 0))
+        ttk.Entry(tw_input_frame, textvariable=self.transition_width_var, width=12,
+                 font=('Arial', 10)).pack(side=tk.LEFT)
+        ttk.Label(tw_input_frame, text=" Hz", font=('Arial', 10)).pack(side=tk.LEFT)
+        
+        # Atenuação
+        atten_subframe = ttk.Frame(spec_frame)
+        atten_subframe.pack(fill=tk.X)
+        ttk.Label(atten_subframe, text="Atenuação na Banda de Rejeição:", 
+                 style="Header.TLabel").pack(anchor=tk.W)
+        atten_input_frame = ttk.Frame(atten_subframe)
+        atten_input_frame.pack(anchor=tk.W, pady=(3, 0))
+        ttk.Entry(atten_input_frame, textvariable=self.stopband_atten_var, width=12,
+                 font=('Arial', 10)).pack(side=tk.LEFT)
+        ttk.Label(atten_input_frame, text=" dB", font=('Arial', 10)).pack(side=tk.LEFT)
+        
+        # ========== BLOCO 3: FREQUÊNCIAS ==========
+        self.freq_main_frame = ttk.LabelFrame(parent, text="  Frequências de Corte  ", padding=10)
+        self.freq_main_frame.grid(row=row, column=0, columnspan=2, sticky="ew", pady=(0, 12))
         row += 1
         
-        # Atenuação na banda de rejeição
-        ttk.Label(parent, text="Atenuação na Banda\nde Rejeição:", font=('Arial', 10)).grid(
-            row=row, column=0, sticky=tk.W, pady=5)
-        atten_frame = ttk.Frame(parent)
-        atten_frame.grid(row=row, column=1, sticky=tk.W+tk.E, pady=5, padx=(10,0))
-        ttk.Entry(atten_frame, textvariable=self.stopband_atten_var, width=10).pack(side=tk.LEFT)
-        ttk.Label(atten_frame, text="dB").pack(side=tk.LEFT, padx=(5, 0))
+        # Frame dinâmico para frequências (dentro do LabelFrame)
+        self.freq_frame = ttk.Frame(self.freq_main_frame)
+        self.freq_frame.pack(fill=tk.BOTH, expand=True)
+        
+        # ========== BLOCO 4: VERIFICAÇÃO DE JANELAS ==========
+        check_frame = ttk.LabelFrame(parent, text="  Verificação de Compatibilidade  ", padding=10)
+        check_frame.grid(row=row, column=0, columnspan=2, sticky="ew", pady=(0, 12))
         row += 1
         
-        # Botão para verificar janelas disponíveis
-        check_button = ttk.Button(parent, text="Verificar Janelas Disponíveis", 
-                                 command=self.check_available_windows)
-        check_button.grid(row=row, column=0, columnspan=2, pady=20)
-        row += 1
+        ttk.Label(check_frame, text="Verificar janelas que atendem as especificações:",
+                 font=('Arial', 9)).pack(anchor=tk.W, pady=(0, 8))
+        check_button = ttk.Button(check_frame, text="VERIFICAR JANELAS DISPONÍVEIS", 
+                                 command=self.check_available_windows,
+                                 style="Action.TButton")
+        check_button.pack(fill=tk.X)
         
-        # Frame para seleção de janelas
-        self.window_frame = ttk.LabelFrame(parent, text="Funções de Janelamento Disponíveis", 
+        # ========== BLOCO 5: SELEÇÃO DE JANELA ==========
+        self.window_frame = ttk.LabelFrame(parent, text="  Seleção da Função de Janelamento  ", 
                                           padding=10)
-        self.window_frame.grid(row=row, column=0, columnspan=2, sticky="ew", pady=10)
+        self.window_frame.grid(row=row, column=0, columnspan=2, sticky="ew", pady=(0, 12))
         row += 1
         
-        # Botão para calcular filtro
-        self.calc_button = ttk.Button(parent, text="PROJETAR FILTRO", 
+        # ========== BLOCO 6: PROJETO DO FILTRO ==========
+        design_frame = ttk.LabelFrame(parent, text="  Execução do Projeto  ", padding=10)
+        design_frame.grid(row=row, column=0, columnspan=2, sticky="ew", pady=(0, 12))
+        row += 1
+        
+        ttk.Label(design_frame, text="Projetar o filtro com as especificações definidas:",
+                 font=('Arial', 9)).pack(anchor=tk.W, pady=(0, 8))
+        self.calc_button = ttk.Button(design_frame, text="PROJETAR FILTRO", 
                                      command=self.design_filter,
-                                     state=tk.DISABLED)
-        self.calc_button.grid(row=row, column=0, columnspan=2, pady=20)
-        row += 1
+                                     state=tk.DISABLED,
+                                     style="Action.TButton")
+        self.calc_button.pack(fill=tk.X)
         
-        # Frame de resultados calculados
-        self.results_frame = ttk.LabelFrame(parent, text="Informações Calculadas", padding=10)
-        self.results_frame.grid(row=row, column=0, columnspan=2, sticky="nsew", pady=10)
+        # ========== BLOCO 7: RESULTADOS ==========
+        self.results_frame = ttk.LabelFrame(parent, text="  Informações Calculadas  ", padding=10)
+        self.results_frame.grid(row=row, column=0, columnspan=2, sticky="nsew", pady=(0, 5))
         
-        self.results_text = tk.Text(self.results_frame, height=15, width=50, wrap=tk.WORD, 
-                                   font=('Consolas', 9))
-        scrollbar_results = ttk.Scrollbar(self.results_frame, orient="vertical", 
+        # Text widget com scrollbar
+        text_frame = ttk.Frame(self.results_frame)
+        text_frame.pack(fill=tk.BOTH, expand=True)
+        
+        self.results_text = tk.Text(text_frame, height=10, wrap=tk.WORD, 
+                                   font=('Consolas', 9), bg='#f8f9fa',
+                                   relief=tk.SUNKEN, bd=1)
+        scrollbar_results = ttk.Scrollbar(text_frame, orient="vertical", 
                                          command=self.results_text.yview)
         self.results_text.configure(yscrollcommand=scrollbar_results.set)
         
@@ -159,26 +222,26 @@ class FilterDesignApp:
         
         # Configurar expansão
         parent.grid_rowconfigure(row, weight=1)
-        parent.grid_columnconfigure(1, weight=1)
+        parent.grid_columnconfigure(0, weight=1)
         
         # Inicializar campos de frequência
         self.update_frequency_fields()
     
     def create_visualization_section(self, parent):
         """Cria a seção de visualização"""
-        # Notebook para múltiplas visualizações
+        # Notebook para múltiplas visualizações com estilo melhorado
         self.notebook = ttk.Notebook(parent)
-        self.notebook.pack(fill=tk.BOTH, expand=True)
+        self.notebook.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
-        # Criar abas
+        # Criar abas com nomes mais descritivos
         self.window_tab = ttk.Frame(self.notebook)
-        self.notebook.add(self.window_tab, text="Função de Janelamento")
+        self.notebook.add(self.window_tab, text="  Função de Janelamento  ")
         
         self.coef_tab = ttk.Frame(self.notebook)
-        self.notebook.add(self.coef_tab, text="Coeficientes do Filtro")
+        self.notebook.add(self.coef_tab, text="  Coeficientes do Filtro  ")
         
         self.freq_tab = ttk.Frame(self.notebook)
-        self.notebook.add(self.freq_tab, text="Resposta em Frequência")
+        self.notebook.add(self.freq_tab, text="  Resposta em Frequência  ")
         
         # Inicializar visualizador
         parent_frames = {
@@ -201,42 +264,46 @@ class FilterDesignApp:
         filter_type = self.filter_type_var.get()
         
         if filter_type in ["Passa-Baixa", "Passa-Alta"]:
-            # Para passa-baixa e passa-alta: apenas uma frequência de borda
-            freq_label = ttk.Label(self.freq_frame, text="Frequência da Borda da\nBanda Passante:", 
-                                  font=('Arial', 10))
-            freq_label.grid(row=0, column=0, sticky=tk.W, pady=5)
+            # Para passa-baixa e passa-alta: apenas uma frequência
+            freq_subframe = ttk.Frame(self.freq_frame)
+            freq_subframe.pack(fill=tk.X)
             
-            fp_frame = ttk.Frame(self.freq_frame)
-            fp_frame.grid(row=0, column=1, sticky=tk.W+tk.E, pady=5, padx=(10,0))
-            ttk.Entry(fp_frame, textvariable=self.fp1_var, width=10).pack(side=tk.LEFT)
-            ttk.Label(fp_frame, text="Hz").pack(side=tk.LEFT, padx=(5, 0))
+            label_text = "Frequência da Borda da Banda Passante:"
+            ttk.Label(freq_subframe, text=label_text, style="Header.TLabel").pack(anchor=tk.W)
+            
+            fp_input_frame = ttk.Frame(freq_subframe)
+            fp_input_frame.pack(anchor=tk.W, pady=(3, 0))
+            ttk.Entry(fp_input_frame, textvariable=self.fp1_var, width=12,
+                     font=('Arial', 10)).pack(side=tk.LEFT)
+            ttk.Label(fp_input_frame, text=" Hz", font=('Arial', 10)).pack(side=tk.LEFT)
             
         elif filter_type in ["Passa-Banda", "Rejeita-Banda"]:
             if filter_type == "Passa-Banda":
-                label_text1 = "Frequência Inferior\nda Banda Passante:"
-                label_text2 = "Frequência Superior\nda Banda Passante:"
+                label_text1 = "Frequência Inferior da Banda Passante:"
+                label_text2 = "Frequência Superior da Banda Passante:"
             else:  # Rejeita-Banda
-                label_text1 = "Frequência Inferior\nda Banda a ser Rejeitada:"
-                label_text2 = "Frequência Superior\nda Banda a ser Rejeitada:"
-                
-            fp1_label = ttk.Label(self.freq_frame, text=label_text1, font=('Arial', 10))
-            fp1_label.grid(row=0, column=0, sticky=tk.W, pady=5)
+                label_text1 = "Frequência Inferior da Banda Rejeitada:"
+                label_text2 = "Frequência Superior da Banda Rejeitada:"
             
-            fp1_frame = ttk.Frame(self.freq_frame)
-            fp1_frame.grid(row=0, column=1, sticky=tk.W+tk.E, pady=5, padx=(10,0))
-            ttk.Entry(fp1_frame, textvariable=self.fp1_var, width=10).pack(side=tk.LEFT)
-            ttk.Label(fp1_frame, text="Hz").pack(side=tk.LEFT, padx=(5, 0))
+            # Primeira frequência
+            fp1_subframe = ttk.Frame(self.freq_frame)
+            fp1_subframe.pack(fill=tk.X, pady=(0, 10))
+            ttk.Label(fp1_subframe, text=label_text1, style="Header.TLabel").pack(anchor=tk.W)
+            fp1_input_frame = ttk.Frame(fp1_subframe)
+            fp1_input_frame.pack(anchor=tk.W, pady=(3, 0))
+            ttk.Entry(fp1_input_frame, textvariable=self.fp1_var, width=12,
+                     font=('Arial', 10)).pack(side=tk.LEFT)
+            ttk.Label(fp1_input_frame, text=" Hz", font=('Arial', 10)).pack(side=tk.LEFT)
             
-            fp2_label = ttk.Label(self.freq_frame, text=label_text2, font=('Arial', 10))
-            fp2_label.grid(row=1, column=0, sticky=tk.W, pady=5)
-            
-            fp2_frame = ttk.Frame(self.freq_frame)
-            fp2_frame.grid(row=1, column=1, sticky=tk.W+tk.E, pady=5, padx=(10,0))
-            ttk.Entry(fp2_frame, textvariable=self.fp2_var, width=10).pack(side=tk.LEFT)
-            ttk.Label(fp2_frame, text="Hz").pack(side=tk.LEFT, padx=(5, 0))
-        
-        # Configurar expansão
-        self.freq_frame.grid_columnconfigure(1, weight=1)
+            # Segunda frequência
+            fp2_subframe = ttk.Frame(self.freq_frame)
+            fp2_subframe.pack(fill=tk.X)
+            ttk.Label(fp2_subframe, text=label_text2, style="Header.TLabel").pack(anchor=tk.W)
+            fp2_input_frame = ttk.Frame(fp2_subframe)
+            fp2_input_frame.pack(anchor=tk.W, pady=(3, 0))
+            ttk.Entry(fp2_input_frame, textvariable=self.fp2_var, width=12,
+                     font=('Arial', 10)).pack(side=tk.LEFT)
+            ttk.Label(fp2_input_frame, text=" Hz", font=('Arial', 10)).pack(side=tk.LEFT)
     
     def check_available_windows(self):
         """Verifica quais janelas atendem a especificação de atenuação"""
@@ -256,14 +323,15 @@ class FilterDesignApp:
                     "Considere reduzir a exigência de atenuação.")
                 return
             
-            # Criar dropdown com janelas disponíveis
+            # Criar interface para seleção
             ttk.Label(self.window_frame, 
-                     text=f"Janelas que atendem ≥{required_atten} dB:", 
-                     font=('Arial', 10, 'bold')).pack(anchor=tk.W, pady=(0, 10))
+                     text=f"Janelas compatíveis (≥{required_atten} dB):", 
+                     style="Header.TLabel").pack(anchor=tk.W, pady=(0, 8))
             
             window_combo = ttk.Combobox(self.window_frame, textvariable=self.selected_window_var,
-                                       values=self.available_windows, state="readonly", width=25)
-            window_combo.pack(pady=5)
+                                       values=self.available_windows, state="readonly", 
+                                       width=30, font=('Arial', 10))
+            window_combo.pack(pady=(0, 8), fill=tk.X)
             window_combo.bind("<<ComboboxSelected>>", self.on_window_selected)
             
             # Mostrar informações das janelas disponíveis
@@ -274,16 +342,22 @@ class FilterDesignApp:
     
     def show_available_windows_info(self, required_atten):
         """Mostra informações das janelas disponíveis"""
-        info_text = "\n=== JANELAS DISPONÍVEIS ===\n"
-        for window_name in self.available_windows:
+        info_text = "=" * 50 + "\n"
+        info_text += "       JANELAS COMPATÍVEIS ENCONTRADAS\n"
+        info_text += "=" * 50 + "\n\n"
+        
+        for i, window_name in enumerate(self.available_windows, 1):
             params = self.calculator.window_parameters[window_name]
-            info_text += f"\n{window_name}:\n"
-            info_text += f"• Atenuação: {params['atenuacao_banda_rejeicao_db']} dB\n"
-            info_text += f"• Largura de Transição: {params['largura_transicao_normalizada']}/N\n"
-            info_text += f"• Ondulação Banda Passante: {params['ondulacao_banda_passante_db']} dB\n"
+            info_text += f"{i}. {window_name}\n"
+            info_text += f"   • Atenuação: {params['atenuacao_banda_rejeicao_db']} dB\n"
+            info_text += f"   • Largura de Transição: {params['largura_transicao_normalizada']}/N\n"
+            info_text += f"   • Ondulação Banda Passante: {params['ondulacao_banda_passante_db']} dB\n"
             if params.get('lobulo_principal_lateral_db'):
-                info_text += f"• Lóbulo Principal vs Lateral: {params['lobulo_principal_lateral_db']} dB\n"
-            info_text += f"• Expressão: {params['expressao']}\n"
+                info_text += f"   • Lóbulo Principal vs Lateral: {params['lobulo_principal_lateral_db']} dB\n"
+            info_text += f"   • Expressão: {params['expressao']}\n\n"
+        
+        info_text += "=" * 50 + "\n"
+        info_text += "Selecione uma janela acima para continuar o projeto.\n"
         
         self.results_text.delete(1.0, tk.END)
         self.results_text.insert(tk.END, info_text)
@@ -313,7 +387,7 @@ class FilterDesignApp:
             self.results_text.delete(1.0, tk.END)
             self.results_text.insert(tk.END, report)
             
-            messagebox.showinfo("Sucesso", "Filtro projetado com sucesso!")
+            messagebox.showinfo("Sucesso", "Filtro projetado com sucesso!\nVerifique as abas de visualização.")
             
         except ValueError as e:
             messagebox.showerror("Erro de Entrada", str(e))

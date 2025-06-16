@@ -254,24 +254,6 @@ class FilterVisualizer:
                 fp1, fp2 = filter_specs['fp_values']
                 fs1 = fp1 - transition_width
                 fs2 = fp2 + transition_width
-                
-                if fs1 > 0:
-                    ax.axvline(fs1, color='g', linestyle='--', alpha=0.8, 
-                              label=f'fs1 = {fs1:.0f} Hz (borda passa-baixa)')
-                
-                ax.axvline(fp1, color='r', linestyle='--', alpha=0.8, 
-                          label=f'fp1 = {fp1:.0f} Hz (início banda rejeitada)')
-                ax.axvline(fp2, color='r', linestyle='--', alpha=0.8, 
-                          label=f'fp2 = {fp2:.0f} Hz (fim banda rejeitada)')
-                
-                if fs2 < fs/2:
-                    ax.axvline(fs2, color='g', linestyle='--', alpha=0.8, 
-                              label=f'fs2 = {fs2:.0f} Hz (borda passa-alta)')
-                
-                ax.axvline(fc_list[0], color='orange', linestyle=':', alpha=0.8, 
-                          label=f'fc1 = {fc_list[0]:.0f} Hz (corte inferior)')
-                ax.axvline(fc_list[1], color='orange', linestyle=':', alpha=0.8, 
-                          label=f'fc2 = {fc_list[1]:.0f} Hz (corte superior)')
             
             ax.axhline(-stopband_atten, color='r', linestyle=':', alpha=0.7, 
                       label=f'Spec: -{stopband_atten:.0f} dB')

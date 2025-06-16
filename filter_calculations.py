@@ -229,9 +229,15 @@ class FilterCalculator:
             if abs(n_centered) < 1e-10:
                 h[i] = 1.0 - 2 * fc_norm
             else:
+                '''
                 delta_impulse = np.sin(np.pi * n_centered) / (np.pi * n_centered)
                 omega_c = fc_norm * np.pi
                 lowpass_term = 2 * fc_norm * np.sin(omega_c * n_centered) / (omega_c * n_centered)
+                h[i] = delta_impulse - lowpass_term
+                '''
+                delta_impulse = np.sin(np.pi * n_centered) / (np.pi * n_centered)
+                sinc_arg = 2 * fc_norm * n_centered
+                lowpass_term = 2 * fc_norm * np.sin(np.pi * sinc_arg) / (np.pi * sinc_arg)
                 h[i] = delta_impulse - lowpass_term
         
         return h
@@ -267,11 +273,12 @@ class FilterCalculator:
             if abs(n_centered) < 1e-10:
                 h[i] = 1 - 2 * (fc2_norm - fc1_norm)
             else:
+                
                 pass_all = np.sin(np.pi * n_centered) / (np.pi * n_centered)
                 stop_band = (np.sin(2 * np.pi * fc2_norm * n_centered) - 
                            np.sin(2 * np.pi * fc1_norm * n_centered)) / (np.pi * n_centered)
-                h[i] = pass_all - stop_band
-        
+                h[i] = pass_all - stop_band               
+                
         return h
     
     def create_window(self, window_name, order):
