@@ -4,7 +4,7 @@ Módulo principal que integra cálculos e visualização
 """
 
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 from filter_calculations import FilterCalculator
 from filter_visualizer import FilterVisualizer
 
@@ -202,7 +202,31 @@ class FilterDesignApp:
                                      style="Action.TButton")
         self.calc_button.pack(fill=tk.X)
         
-        # ========== BLOCO 7: RESULTADOS ==========
+        # ========== BLOCO 7: EXPORTAÇÃO DOS COEFICIENTES ==========
+        export_frame = ttk.LabelFrame(parent, text="  Exportar Coeficientes  ", padding=10)
+        export_frame.grid(row=row, column=0, columnspan=2, sticky="ew", pady=(0, 12))
+        row += 1
+        
+        ttk.Label(export_frame, text="Salvar coeficientes calculados em arquivo:",
+                 font=('Arial', 9)).pack(anchor=tk.W, pady=(0, 8))
+        
+        # Frame para botões de exportação
+        export_buttons_frame = ttk.Frame(export_frame)
+        export_buttons_frame.pack(fill=tk.X)
+        
+        self.export_button = ttk.Button(export_buttons_frame, text="EXPORTAR TXT",
+                                       command=self.export_coefficients,
+                                       state=tk.DISABLED,
+                                       style="Action.TButton")
+        self.export_button.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
+        
+        self.export_matlab_button = ttk.Button(export_buttons_frame, text="EXPORTAR FORMATO MATLAB", 
+                                             command=self.export_coefficients_matlab,
+                                             state=tk.DISABLED,
+                                             style="Action.TButton")
+        self.export_matlab_button.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(5, 0))
+        
+        # ========== BLOCO 8: RESULTADOS ==========
         self.results_frame = ttk.LabelFrame(parent, text="  Informações Calculadas  ", padding=10)
         self.results_frame.grid(row=row, column=0, columnspan=2, sticky="nsew", pady=(0, 5))
         
@@ -226,7 +250,7 @@ class FilterDesignApp:
         
         # Inicializar campos de frequência
         self.update_frequency_fields()
-    
+
     def create_visualization_section(self, parent):
         """Cria a seção de visualização"""
         # Notebook para múltiplas visualizações com estilo melhorado
@@ -387,12 +411,131 @@ class FilterDesignApp:
             self.results_text.delete(1.0, tk.END)
             self.results_text.insert(tk.END, report)
             
+            # Habilitar botões de exportação
+            self.export_button.config(state=tk.NORMAL)
+            self.export_matlab_button.config(state=tk.NORMAL)
+            
             messagebox.showinfo("Sucesso", "Filtro projetado com sucesso!\nVerifique as abas de visualização.")
             
         except ValueError as e:
             messagebox.showerror("Erro de Entrada", str(e))
         except Exception as e:
             messagebox.showerror("Erro", f"Erro no projeto: {e}")
+    
+    def export_coefficients(self):
+        """Exporta os coeficientes do filtro para arquivo txt simples"""
+        if self.current_results is None:
+            messagebox.showwarning("Aviso", "Nenhum filtro foi projetado ainda.")
+            return
+        
+        try:
+            from tkinter import filedialog
+            import datetime
+            
+            # Obter coeficientes
+            coefficients = self.current_results['coefficients']
+            
+            # Diálogo para salvar arquivo
+            filename = filedialog.asksaveasfilename(
+                title="Salvar Coeficientes do Filtro",
+                defaultextension=".txt",
+                filetypes=[
+                    ("Arquivo de texto", "*.txt"),
+                    ("Todos os arquivos", "*.*")
+                ]
+            )
+            
+            if not filename:
+                return
+            
+            # Escrever arquivo
+            with open(filename, 'w', encoding='utf-8') as f:
+            
+                f.write("h = [")
+                for i, coef in enumerate(coefficients):
+                    if i == 0:
+                        f.write(f"{coef:.10f}")
+                    else:
+                        f.write(f", {coef:.10f}")
+                    # Quebrar linha a cada 4 coeficientes para melhor leitura
+                    #if (i + 1) % 4 == 0 and i < len(coefficients) - 1:
+                    #    f.write("\n     ")
+                f.write("];\n")
+            
+            messagebox.showinfo("Sucesso", f"Coeficientes salvos com sucesso!\nArquivo: {filename}")
+            
+        except Exception as e:
+            messagebox.showerror("Erro", f"Erro ao salvar arquivo: {e}")
+
+    def export_coefficients_matlab(self):
+        """Exporta os coeficientes em formato compatível com MATLAB/Octave"""
+        if self.current_results is None:
+            messagebox.showwarning("Aviso", "Nenhum filtro foi projetado ainda.")
+            return
+        
+        try:
+            from tkinter import filedialog
+            import datetime
+            
+            # Obter coeficientes e especificações
+            coefficients = self.current_results['coefficients']
+            filter_specs = {
+                'filter_type': self.filter_type_var.get(),
+                'fs': float(self.fs_var.get()),
+                'window_name': self.selected_window_var.get(),
+                'order': self.current_results['order']
+            }
+            
+            # Diálogo para salvar arquivo
+            filename = filedialog.asksaveasfilename(
+                title="Salvar Coeficientes (Formato MATLAB)",
+                defaultextension=".m",
+                filetypes=[
+                    ("Arquivo MATLAB", "*.m"),
+                    ("Arquivo de texto", "*.txt"),
+                    ("Todos os arquivos", "*.*")
+                ]
+            )
+            
+            if not filename:
+                return
+            
+            # Escrever arquivo no formato MATLAB
+            with open(filename, 'w', encoding='utf-8') as f:
+                f.write("% COEFICIENTES DE FILTRO FIR\n")
+                f.write("% Gerado automaticamente pelo Software de Projeto de Filtros FIR\n")
+                f.write(f"% Data: {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n")
+                f.write("% " + "=" * 60 + "\n\n")
+                
+                f.write("% Especificações do filtro:\n")
+                f.write(f"% Tipo: {filter_specs['filter_type']}\n")
+                f.write(f"% Janela: {filter_specs['window_name']}\n")
+                f.write(f"% Frequência de amostragem: {filter_specs['fs']} Hz\n")
+                f.write(f"% Ordem: {filter_specs['order']}\n")
+                f.write(f"% Número de coeficientes: {len(coefficients)}\n\n")
+                
+                f.write("% Coeficientes do filtro:\n")
+                f.write("h = [")
+                for i, coef in enumerate(coefficients):
+                    if i == 0:
+                        f.write(f"{coef:.12e}")
+                    else:
+                        f.write(f", {coef:.12e}")
+                    # Quebrar linha a cada 3 coeficientes
+                    if (i + 1) % 3 == 0 and i < len(coefficients) - 1:
+                        f.write(" ...\n     ")
+                f.write("];\n\n")
+                
+                f.write("% Exemplo de uso:\n")
+                f.write("% Fs = {}; % Frequência de amostragem\n".format(filter_specs['fs']))
+                f.write("% [H, w] = freqz(h, 1, 1024, Fs); % Resposta em frequência\n")
+                f.write("% plot(w, 20*log10(abs(H))); % Plotar magnitude em dB\n")
+                f.write("% y = filter(h, 1, x); % Filtrar sinal x\n")
+            
+            messagebox.showinfo("Sucesso", f"Coeficientes salvos em formato MATLAB!\nArquivo: {filename}")
+            
+        except Exception as e:
+            messagebox.showerror("Erro", f"Erro ao salvar arquivo: {e}")
     
     def collect_filter_specifications(self):
         """Coleta e valida as especificações do filtro"""

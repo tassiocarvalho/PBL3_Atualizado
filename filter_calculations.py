@@ -110,6 +110,7 @@ class FilterCalculator:
         if filter_type == "Passa-Baixa":
             if fp_values >= fs/2:
                 raise ValueError("Frequência da banda passante deve ser menor que Fs/2")
+            # fc posicionada no centro da banda de transição (prática comum para FIR)
             fs_freq = fp_values + transition_width
             fc = (fp_values + fs_freq) / 2
             fc_list = [fc]
@@ -196,7 +197,7 @@ class FilterCalculator:
             order += 1
         
         # Limitar ordem
-        order = max(11, min(501, order))
+        order = max(11, min(10001, order))
         
         return order
     
