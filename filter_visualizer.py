@@ -88,7 +88,7 @@ class FilterVisualizer:
     
     def plot_coefficients(self, h_windowed, h_ideal):
         """
-        Plota os coeficientes do filtro
+        Plota os coeficientes do filtro - VERSÃO COM APENAS UM GRÁFICO
         
         Args:
             h_windowed (numpy.ndarray): Coeficientes janelados
@@ -96,53 +96,46 @@ class FilterVisualizer:
         """
         self.coef_fig.clear()
         
-        # Subplot 1: Coeficientes ideais vs janelados
-        ax1 = self.coef_fig.add_subplot(211)
+        # Apenas um subplot ocupando toda a figura
+        ax = self.coef_fig.add_subplot(111)
         n = np.arange(len(h_windowed))
         
         # Coeficientes janelados
-        markerline, stemlines, baseline = ax1.stem(n, h_windowed, linefmt='b-', 
-                                                  markerfmt='bo', basefmt='k-', 
-                                                  label='Coeficientes Janelados h(n)')
+        markerline, stemlines, baseline = ax.stem(n, h_windowed, linefmt='b-', 
+                                                markerfmt='bo', basefmt='k-', 
+                                                label='Coeficientes Janelados h(n)')
         plt.setp(markerline, markersize=4)
         plt.setp(stemlines, linewidth=1.5)
         
         # Coeficientes ideais (linha)
-        ax1.plot(n, h_ideal, 'r--', alpha=0.8, linewidth=2, label='Resposta Ideal')
+        ax.plot(n, h_ideal, 'r--', alpha=0.8, linewidth=2, label='Resposta Ideal')
         
-        ax1.set_title('Coeficientes do Filtro FIR', fontsize=12, fontweight='bold')
-        ax1.set_xlabel('Índice da Amostra (n)')
-        ax1.set_ylabel('Amplitude h(n)')
-        ax1.legend()
-        ax1.grid(True, alpha=0.3)
+        ax.set_title('Coeficientes do Filtro FIR', fontsize=12, fontweight='bold')
+        ax.set_xlabel('Índice da Amostra (n)')
+        ax.set_ylabel('Amplitude h(n)')
+        ax.legend()
+        ax.grid(True, alpha=0.3)
         
         # Destacar centro
         center = len(h_windowed) // 2
-        ax1.axvline(center, color='gray', linestyle=':', alpha=0.5)
+        ax.axvline(center, color='gray', linestyle=':', alpha=0.5, 
+                label=f'Centro (n={center})')
         
-        # Subplot 2: Zoom na região central
-        ax2 = self.coef_fig.add_subplot(212)
-        center_range = 10
-        start_idx = max(0, center - center_range)
-        end_idx = min(len(h_windowed), center + center_range + 1)
+        # Adicionar informações úteis como texto
+        # Mostrar alguns valores importantes
+        max_coeff = np.max(np.abs(h_windowed))
+        center_coeff = h_windowed[center]
         
-        n_zoom = n[start_idx:end_idx]
-        h_zoom = h_windowed[start_idx:end_idx]
-        h_ideal_zoom = h_ideal[start_idx:end_idx]
+        # Caixa de texto com informações
+        info_text = f'Ordem: {len(h_windowed)-1}\n'
+        info_text += f'Centro: n={center}\n'
+        info_text += f'h({center}) = {center_coeff:.4f}\n'
+        info_text += f'Max |h(n)|: {max_coeff:.4f}'
         
-        markerline2, stemlines2, baseline2 = ax2.stem(n_zoom, h_zoom, linefmt='b-', 
-                                                     markerfmt='bo', basefmt='k-', 
-                                                     label='Coeficientes Janelados')
-        plt.setp(markerline2, markersize=5)
-        plt.setp(stemlines2, linewidth=2)
-        
-        ax2.plot(n_zoom, h_ideal_zoom, 'r--', alpha=0.8, linewidth=2, label='Ideal')
-        
-        ax2.set_title(f'Região Central (n = {start_idx} a {end_idx-1})')
-        ax2.set_xlabel('Índice da Amostra (n)')
-        ax2.set_ylabel('Amplitude h(n)')
-        ax2.legend()
-        ax2.grid(True, alpha=0.3)
+        ax.text(0.02, 0.98, info_text, transform=ax.transAxes, 
+            verticalalignment='top', bbox=dict(boxstyle='round', 
+            facecolor='lightblue', alpha=0.8),
+            fontsize=9)
         
         self.coef_fig.tight_layout()
         self.coef_canvas.draw()
