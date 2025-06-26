@@ -248,12 +248,12 @@ class FilterCalculator:
             n_centered = n[i] - M/2
             
             if abs(n_centered) < 1e-10:
-                h[i] = 2 * (fc2_norm - fc1_norm)
+                h[i] = (fc2_norm - fc1_norm)
             else:
                 omega_c1 = fc1_norm * np.pi
                 omega_c2 = fc2_norm * np.pi
-                h[i] = (2 * fc2_norm * np.sin(omega_c2 * n_centered) / (omega_c2 * n_centered) - 
-                        2 * fc1_norm * np.sin(omega_c1 * n_centered) / (omega_c1 * n_centered))
+                h[i] = (fc2_norm * np.sin(omega_c2 * n_centered) / (omega_c2 * n_centered) - 
+                        fc1_norm * np.sin(omega_c1 * n_centered) / (omega_c1 * n_centered))
         
         return h
     
@@ -267,12 +267,12 @@ class FilterCalculator:
             n_centered = n[i] - M / 2
             
             if abs(n_centered) < 1e-10:
-                h[i] = 1 - 2 * (fc2_norm - fc1_norm)
+                h[i] = 1 - (fc2_norm - fc1_norm)
             else:
                 
                 pass_all = np.sin(np.pi * n_centered) / (np.pi * n_centered)
-                stop_band = (np.sin(2 * np.pi * fc2_norm * n_centered) - 
-                           np.sin(2 * np.pi * fc1_norm * n_centered)) / (np.pi * n_centered)
+                stop_band = (np.sin(np.pi * fc2_norm * n_centered) - 
+                           np.sin(np.pi * fc1_norm * n_centered)) / (np.pi * n_centered)
                 h[i] = pass_all - stop_band               
                 
         return h
