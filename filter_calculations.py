@@ -277,7 +277,7 @@ class FilterCalculator:
                 
         return h
     
-    def create_window(self, window_name, order):
+    def create_window(self, window_name, order, fftbins= False):
         """
         Cria a função de janelamento
         
@@ -290,17 +290,17 @@ class FilterCalculator:
         """
         if 'Kaiser' in window_name:
             beta = self.window_parameters[window_name]['beta']
-            window = signal.get_window(('kaiser', beta), order)
+            window = signal.get_window(('kaiser', beta), order, fftbins= False)
         elif window_name == 'Retangular':
-            window = signal.get_window('boxcar', order)
+            window = signal.get_window('boxcar', order, fftbins= False)
         elif window_name == 'Bartlett':
-            window = signal.get_window('bartlett', order)
+            window = signal.get_window('bartlett', order, fftbins= False)
         elif window_name == 'Hanning':
-            window = signal.get_window('hann', order)
+            window = signal.get_window('hann', order, fftbins= False)
         elif window_name == 'Hamming':
-            window = signal.get_window('hamming', order)
+            window = signal.get_window('hamming', order, fftbins= False)
         elif window_name == 'Blackman':
-            window = signal.get_window('blackman', order)
+            window = signal.get_window('blackman', order, fftbins= False)
         else:
             raise ValueError(f"Janela não suportada: {window_name}")
             
