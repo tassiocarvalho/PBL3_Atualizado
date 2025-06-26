@@ -219,7 +219,7 @@ class FilterCalculator:
         return h
     
     def ideal_highpass(self, N, fc_norm):
-        """Calcula filtro passa-alta ideal"""
+        """Calcula filtro passa-alta ideal - ADAPTADO"""
         M = N - 1
         n = np.arange(N)
         h = np.zeros(N)
@@ -228,21 +228,16 @@ class FilterCalculator:
             n_centered = n[i] - M/2
             
             if abs(n_centered) < 1e-10:
-                h[i] = 1.0 - 2 * fc_norm
+                h[i] = 1.0 - fc_norm
             else:
-                '''
+                # Impulso delta menos passa-baixa
                 delta_impulse = np.sin(np.pi * n_centered) / (np.pi * n_centered)
-                omega_c = fc_norm * np.pi
-                lowpass_term = 2 * fc_norm * np.sin(omega_c * n_centered) / (omega_c * n_centered)
-                h[i] = delta_impulse - lowpass_term
-                '''
-                delta_impulse = np.sin(np.pi * n_centered) / (np.pi * n_centered)
-                sinc_arg = 2 * fc_norm * n_centered
-                lowpass_term = 2 * fc_norm * np.sin(np.pi * sinc_arg) / (np.pi * sinc_arg)
-                h[i] = delta_impulse - lowpass_term
-        
+                sinc_arg = fc_norm * n_centered
+                lowpass = fc_norm * np.sin(np.pi * sinc_arg) / (np.pi * sinc_arg)
+                h[i] = delta_impulse - lowpass
+
         return h
-    
+
     def ideal_bandpass(self, N, fc1_norm, fc2_norm):
         """Calcula filtro passa-banda ideal"""
         M = N - 1
