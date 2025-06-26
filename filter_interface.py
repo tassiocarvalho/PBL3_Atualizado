@@ -220,12 +220,7 @@ class FilterDesignApp:
                                        style="Action.TButton")
         self.export_button.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
         
-        self.export_matlab_button = ttk.Button(export_buttons_frame, text="EXPORTAR FORMATO MATLAB", 
-                                             command=self.export_coefficients_matlab,
-                                             state=tk.DISABLED,
-                                             style="Action.TButton")
-        self.export_matlab_button.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(5, 0))
-        
+    
         # ========== BLOCO 8: RESULTADOS ==========
         self.results_frame = ttk.LabelFrame(parent, text="  Informações Calculadas  ", padding=10)
         self.results_frame.grid(row=row, column=0, columnspan=2, sticky="nsew", pady=(0, 5))
@@ -413,7 +408,6 @@ class FilterDesignApp:
             
             # Habilitar botões de exportação
             self.export_button.config(state=tk.NORMAL)
-            self.export_matlab_button.config(state=tk.NORMAL)
             
             messagebox.showinfo("Sucesso", "Filtro projetado com sucesso!\nVerifique as abas de visualização.")
             
